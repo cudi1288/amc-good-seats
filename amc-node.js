@@ -36,7 +36,7 @@ const THEATER_URL =
 const TEST_MODE = process.env.TEST_MODE === "true" || process.env.TEST_MODE === "1";
 
 const MAX_DATES = 14;
-const MIN_SEATS_FOR_EMAIL = 2;
+const MIN_SEATS_FOR_EMAIL = 3;
 
 const TARGET_ROWS = TEST_MODE
   ? ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P"]
