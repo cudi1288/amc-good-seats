@@ -29,7 +29,7 @@ const THEATER_URL =
 
 const TEST_MODE = process.env.TEST_MODE === "true" || process.env.TEST_MODE === "1";
 
-const MAX_DATES = 14;
+const MAX_DATES = 120;
 const MIN_SEATS_FOR_EMAIL = 2;
 
 const TARGET_ROWS = TEST_MODE
@@ -111,15 +111,9 @@ async function getShowtimes(page, date) {
       if (!idMatch) continue;
 
       const showtimeId = idMatch[1];
+      const showtimeId = idMatch[1];
       const timeText = link.innerText.trim().split("\n")[0];
       const isSoldOut = link.innerText.includes("Sold Out");
-
-      const formatLi = link.closest("ul")?.closest("li");
-      const isImax70mm = formatLi
-        ? (formatLi.innerText || "").includes("IMAX 70MM")
-        : false;
-      if (!isImax70mm) continue;
-
       const section = link.closest("section");
       const movieHeading = section?.querySelector("h1");
       const movieName = movieHeading ? movieHeading.innerText.trim() : "";
@@ -186,7 +180,7 @@ async function getAvailableSeats(page, showtimeId) {
 // ─── Scan ───────────────────────────────────────────────────────────────────
 
 async function runFullScan(page) {
-  log("Scanning AMC Lincoln Square 13 — IMAX 70mm");
+  log("Scanning AMC CRYSTAL RUN 16");
   log(`Target: ${MOVIES.join(", ")}`);
   log(`Seats: rows ${TARGET_ROWS.join("/")} cols ${TARGET_COL_MIN}-${TARGET_COL_MAX}`);
 
