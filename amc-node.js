@@ -19,7 +19,7 @@ puppeteer.use(StealthPlugin());
 // ─── Config ─────────────────────────────────────────────────────────────────
 
 const MOVIES = [
-  "by any means,
+  "by any means",
 ];
 
 const MIN_SHOWTIME_MINUTES = 0;
