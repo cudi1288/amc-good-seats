@@ -44,8 +44,8 @@ const TARGET_ROWS = TEST_MODE
 const TARGET_COL_MIN = TEST_MODE ? 1 : 9;
 const TARGET_COL_MAX = TEST_MODE ? 100 : 39;
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+const YAHOO_USER = process.env.YAHOO_USER;
+const YAHOO_APP_PASSWORD = process.env.YAHOO_APP_PASSWORD;
 const NOTIFY_EMAILS = (process.env.NOTIFY_EMAIL || "")
   .split(",")
   .map((e) => e.trim())
@@ -75,17 +75,21 @@ function parseShowtimeMinutes(timeText) {
 }
 
 async function sendEmail(subject, html) {
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD || NOTIFY_EMAILS.length === 0) {
-    log("GMAIL_USER / GMAIL_APP_PASSWORD / NOTIFY_EMAIL not set — skipping email.");
+  if (!YAHOO_USER || !YAHOO_APP_PASSWORD || NOTIFY_EMAILS.length === 0) {
+    log("YAHOO_USER / YAHOO_APP_PASSWORD / NOTIFY_EMAIL not set — skipping email.");
     return;
   }
   const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    host: "smtp.mail.yahoo.com",
+    port: 465,
+    auth: { 
+      user: YAHOO_USER, 
+      pass: YAHOO_APP_PASSWORD,
+    },
   });
   try {
     await transporter.sendMail({
-      from: `"AMC Watcher" <${GMAIL_USER}>`,
+      from: `"AMC Watcher" <${YAHOO_USER}>`,
       to: NOTIFY_EMAILS,
       subject,
       html,
