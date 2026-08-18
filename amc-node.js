@@ -19,24 +19,18 @@ puppeteer.use(StealthPlugin());
 // ─── Config ─────────────────────────────────────────────────────────────────
 
 const MOVIES = [
-  "the odyssey",
-  "dune: part three",
-  "dune part three",
-  "spider-man: brand new day",
-  "spider-man brand new day",
-  "avengers: doomsday",
-  "avengers doomsday",
+  "by any means,
 ];
 
-const MIN_SHOWTIME_MINUTES = 13 * 60;
+const MIN_SHOWTIME_MINUTES = 0;
 
 const THEATER_URL =
-  "https://www.amctheatres.com/movie-theatres/new-york-city/amc-lincoln-square-13/showtimes";
+  "https://www.amctheatres.com/movie-theatres/middletown/amc-crystal-run-16/showtimes";
 
 const TEST_MODE = process.env.TEST_MODE === "true" || process.env.TEST_MODE === "1";
 
 const MAX_DATES = 14;
-const MIN_SEATS_FOR_EMAIL = 3;
+const MIN_SEATS_FOR_EMAIL = 2;
 
 const TARGET_ROWS = TEST_MODE
   ? ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P"]
