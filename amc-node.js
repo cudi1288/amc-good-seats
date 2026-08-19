@@ -131,36 +131,29 @@ async function getShowtimes(page, date) {
     return results;
   }, MOVIES);
 }
-
 async function getAvailableDates(page) {
   await page.goto(THEATER_URL, {
     waitUntil: "networkidle2",
     timeout: 60000,
   });
 
-  await sleep(3000);
+  await sleep(5000);
 
   return page.evaluate(() => {
     const dates = new Set();
 
-    document.querySelectorAll("a, button, option").forEach((el) => {
-      const text =
-        `${el.getAttribute("href") || ""} ` +
-        `${el.getAttribute("value") || ""} ` +
-        `${el.innerText || ""}`;
+    // Look for dates anywhere in the page HTML
+    const html = document.documentElement.innerHTML;
 
-      const matches = text.match(/\b\d{4}-\d{2}-\d{2}\b/g);
+    const matches = html.match(/\b2026-\d{2}-\d{2}\b/g) || [];
 
-      if (matches) {
-        for (const date of matches) {
-          dates.add(date);
-        }
-      }
-    });
+    for (const date of matches) {
+      dates.add(date);
+    }
 
     return Array.from(dates).sort();
   });
-} 
+}
 async function getAvailableSeats(page, showtimeId) {
   const url = `https://www.amctheatres.com/showtimes/${showtimeId}`;
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
