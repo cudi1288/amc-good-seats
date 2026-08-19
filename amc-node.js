@@ -33,10 +33,9 @@ const MAX_DATES = 120;
 const MIN_SEATS_FOR_EMAIL = 2;
 
 const TARGET_ROWS = TEST_MODE
-  ? ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P"]
-  : ["F", "G", "H", "J"];
-const TARGET_COL_MIN = TEST_MODE ? 1 : 9;
-const TARGET_COL_MAX = TEST_MODE ? 100 : 39;
+  ? ["A", "B", "C", "D", "E", "F"];
+const TARGET_COL_MIN = 1;
+const TARGET_COL_MAX = 100;
 
 const YAHOO_USER = process.env.YAHOO_USER;
 const YAHOO_APP_PASSWORD = process.env.YAHOO_APP_PASSWORD;
