@@ -32,8 +32,7 @@ const TEST_MODE = process.env.TEST_MODE === "true" || process.env.TEST_MODE === 
 const MAX_DATES = 120;
 const MIN_SEATS_FOR_EMAIL = 2;
 
-const TARGET_ROWS = TEST_MODE
-  ? ["A", "B", "C", "D", "E", "F"];
+const TARGET_ROWS = ["A", "B", "C", "D", "E", "F"];
 const TARGET_COL_MIN = 1;
 const TARGET_COL_MAX = 100;
 
