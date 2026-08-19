@@ -133,17 +133,34 @@ async function getShowtimes(page, date) {
 }
 
 async function getAvailableDates(page) {
-  await page.goto(THEATER_URL, { waitUntil: "networkidle2", timeout: 60000 });
-  await sleep(2000);
+  await page.goto(THEATER_URL, {
+    waitUntil: "networkidle2",
+    timeout: 60000,
+  });
 
-  return page.evaluate(() => {
-    const options = document.querySelectorAll('select[name="date"] option');
-    return Array.from(options)
-      .map((o) => o.value)
-      .filter((v) => v && /^\d{4}-\d{2}-\d{2}$/.test(v));
-  });
-}
+  await sleep(3000);
 
+  return page.evaluate(() => {
+    const dates = new Set();
+
+    document.querySelectorAll("a, button, option").forEach((el) => {
+      const text =
+        `${el.getAttribute("href") || ""} ` +
+        `${el.getAttribute("value") || ""} ` +
+        `${el.innerText || ""}`;
+
+      const matches = text.match(/\b\d{4}-\d{2}-\d{2}\b/g);
+
+      if (matches) {
+        for (const date of matches) {
+          dates.add(date);
+        }
+      }
+    });
+
+    return Array.from(dates).sort();
+  });
+} 
 async function getAvailableSeats(page, showtimeId) {
   const url = `https://www.amctheatres.com/showtimes/${showtimeId}`;
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
