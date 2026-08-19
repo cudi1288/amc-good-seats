@@ -140,30 +140,35 @@ async function getAvailableDates(page) {
   return page.evaluate(() => {
     const dates = new Set();
 
-    // Look for date values in links, buttons, options,
-    // data attributes, and the page itself.
-    document.querySelectorAll("*").forEach((el) => {
-      for (const attr of el.attributes || []) {
-        const value = attr.value || "";
+    // Check links, buttons, options, and elements
+    // that contain date-related information.
+    const elements = document.querySelectorAll(
+      "a, button, option, [data-date], [aria-label]"
+    );
 
-        const matches = value.match(/\b2026-\d{2}-\d{2}\b/g) || [];
+    for (const el of elements) {
+      const values = [
+        el.getAttribute("href") || "",
+        el.getAttribute("value") || "",
+        el.getAttribute("data-date") || "",
+        el.getAttribute("aria-label") || "",
+        el.textContent || "",
+      ];
 
-        for (const date of matches) {
+      for (const value of values) {
+        // YYYY-MM-DD
+        const isoMatches =
+          value.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
+
+        for (const date of isoMatches) {
           dates.add(date);
         }
       }
-
-      const text = el.textContent || "";
-      const matches = text.match(/\b2026-\d{2}-\d{2}\b/g) || [];
-
-      for (const date of matches) {
-        dates.add(date);
-      }
-    });
+    }
 
     return Array.from(dates).sort();
   });
-}
+} 
 async function getAvailableSeats(page, showtimeId) {
   const url = `https://www.amctheatres.com/showtimes/${showtimeId}`;
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
