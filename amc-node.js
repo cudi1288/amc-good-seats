@@ -111,7 +111,6 @@ async function getShowtimes(page, date) {
       if (!idMatch) continue;
 
       const showtimeId = idMatch[1];
-      const showtimeId = idMatch[1];
       const timeText = link.innerText.trim().split("\n")[0];
       const isSoldOut = link.innerText.includes("Sold Out");
       const section = link.closest("section");
@@ -195,7 +194,7 @@ async function runFullScan(page) {
     const showtimes = await getShowtimes(page, date);
     if (showtimes.length === 0) continue;
 
-    log(`  ${date}: ${showtimes.length} IMAX 70mm showtime(s)`);
+    log(`  ${date}: ${showtimes.length} matching showtime(s)`);
 
     for (const st of showtimes) {
       if (st.soldOut) {
@@ -244,7 +243,7 @@ async function runFullScan(page) {
 // ─── Entry ──────────────────────────────────────────────────────────────────
 
 async function main() {
-  log("AMC IMAX 70mm Seat Watcher — single scan");
+  log("AMC CRYSTAL RUN 16 Seat Watcher — single scan");
 
   const browser = await puppeteer.launch({
     headless: "new",
