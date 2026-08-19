@@ -95,37 +95,82 @@ async function sendEmail(subject, html) {
 // ─── Scraping ───────────────────────────────────────────────────────────────
 
 async function getShowtimes(page, date) {
-  const url = date ? `${THEATER_URL}?date=${date}` : THEATER_URL;
-  await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
-  await sleep(2000);
+  const url = date
+    ? `${THEATER_URL}?date=${date}`
+    : THEATER_URL;
+
+  log(`    Checking ${date}...`);
+
+  await page.goto(url, {
+    waitUntil: "networkidle2",
+    timeout: 60000,
+  });
+
+  await sleep(3000);
 
   return page.evaluate((movieTerms) => {
-    const links = document.querySelectorAll("a[href*='/showtimes/']");
     const results = [];
 
+    // Get all visible text from the page
+    const bodyText = document.body.innerText || "";
+
+    // Find every showtime link
+    const links = Array.from(
+      document.querySelectorAll("a[href*='/showtimes/']")
+    );
+
     for (const link of links) {
-      const href = link.href;
+      const href = link.getAttribute("href") || "";
       const idMatch = href.match(/\/showtimes\/(\d+)/);
+
       if (!idMatch) continue;
 
       const showtimeId = idMatch[1];
-      const timeText = link.innerText.trim().split("\n")[0];
-      const isSoldOut = link.innerText.includes("Sold Out");
-      const section = link.closest("section");
-      const movieHeading = section?.querySelector("h1");
-      const movieName = movieHeading ? movieHeading.innerText.trim() : "";
+      const text = (link.innerText || "").trim();
 
-      const lower = movieName.toLowerCase();
-      const matches = movieTerms.some((term) => lower.includes(term));
+      // Look upward through the DOM for the movie title.
+      let container = link;
+      let movieName = "";
+
+      for (let i = 0; i < 8 && container; i++) {
+        const headings = container.querySelectorAll
+          ? container.querySelectorAll("h1, h2, h3, h4, h5")
+          : [];
+
+        for (const heading of headings) {
+          const headingText = heading.innerText.trim();
+
+          if (headingText.length > 2) {
+            movieName = headingText;
+            break;
+          }
+        }
+
+        if (movieName) break;
+
+        container = container.parentElement;
+      }
+
+      const combinedText = (
+        movieName +
+        " " +
+        text
+      ).toLowerCase();
+
+      const matches = movieTerms.some((term) =>
+        combinedText.includes(term.toLowerCase())
+      );
+
       if (!matches) continue;
 
       results.push({
         id: showtimeId,
-        movie: movieName,
-        time: timeText,
-        soldOut: isSoldOut,
+        movie: movieName || "By Any Means",
+        time: text.split("\n")[0].trim(),
+        soldOut: text.toLowerCase().includes("sold out"),
       });
     }
+
     return results;
   }, MOVIES);
 }
