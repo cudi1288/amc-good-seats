@@ -140,14 +140,26 @@ async function getAvailableDates(page) {
   return page.evaluate(() => {
     const dates = new Set();
 
-    // Look for dates anywhere in the page HTML
-    const html = document.documentElement.innerHTML;
+    // Look for date values in links, buttons, options,
+    // data attributes, and the page itself.
+    document.querySelectorAll("*").forEach((el) => {
+      for (const attr of el.attributes || []) {
+        const value = attr.value || "";
 
-    const matches = html.match(/\b2026-\d{2}-\d{2}\b/g) || [];
+        const matches = value.match(/\b2026-\d{2}-\d{2}\b/g) || [];
 
-    for (const date of matches) {
-      dates.add(date);
-    }
+        for (const date of matches) {
+          dates.add(date);
+        }
+      }
+
+      const text = el.textContent || "";
+      const matches = text.match(/\b2026-\d{2}-\d{2}\b/g) || [];
+
+      for (const date of matches) {
+        dates.add(date);
+      }
+    });
 
     return Array.from(dates).sort();
   });
