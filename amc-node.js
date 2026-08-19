@@ -130,45 +130,70 @@ async function getShowtimes(page, date) {
   }, MOVIES);
 }
 async function getAvailableDates(page) {
-  await page.goto(THEATER_URL, {
-    waitUntil: "networkidle2",
-    timeout: 60000,
-  });
+  await page.goto(THEATER_URL, {
+    waitUntil: "networkidle2",
+    timeout: 60000,
+  });
 
-  await sleep(5000);
+  await sleep(5000);
 
-  return page.evaluate(() => {
-    const dates = new Set();
+  return page.evaluate(() => {
+    const dates = new Set();
 
-    // Check links, buttons, options, and elements
-    // that contain date-related information.
-    const elements = document.querySelectorAll(
-      "a, button, option, [data-date], [aria-label]"
-    );
+    // Look for AMC date/showtime links and date attributes
+    const elements = document.querySelectorAll(
+      "a, button, option, [data-date], [aria-label], [class*='date'], [class*='Date']"
+    );
 
-    for (const el of elements) {
-      const values = [
-        el.getAttribute("href") || "",
-        el.getAttribute("value") || "",
-        el.getAttribute("data-date") || "",
-        el.getAttribute("aria-label") || "",
-        el.textContent || "",
-      ];
+    for (const el of elements) {
+      const values = [
+        el.getAttribute("href") || "",
+        el.getAttribute("value") || "",
+        el.getAttribute("data-date") || "",
+        el.getAttribute("aria-label") || "",
+        el.textContent || "",
+      ];
 
-      for (const value of values) {
-        // YYYY-MM-DD
-        const isoMatches =
-          value.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
+      for (const value of values) {
+        // ISO date: 2026-08-19
+        const isoMatches =
+          value.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
 
-        for (const date of isoMatches) {
-          dates.add(date);
-        }
-      }
-    }
+        for (const date of isoMatches) {
+          dates.add(date);
+        }
 
-    return Array.from(dates).sort();
-  });
-} 
+        // Date inside URL such as ?date=2026-08-19
+        const urlMatch = value.match(
+          /[?&]date=(\d{4}-\d{2}-\d{2})/
+        );
+
+        if (urlMatch) {
+          dates.add(urlMatch[1]);
+        }
+      }
+    }
+
+    // If AMC doesn't expose ISO dates, use the current date
+    // and the next 119 calendar days.
+    if (dates.size === 0) {
+      const today = new Date();
+
+      for (let i = 0; i < 120; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+
+        dates.add(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+
+    return Array.from(dates).sort();
+  });
+}
 async function getAvailableSeats(page, showtimeId) {
   const url = `https://www.amctheatres.com/showtimes/${showtimeId}`;
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
