@@ -22,7 +22,7 @@ const MOVIES = [
   "by any means",
 ];
 
-const MIN_SHOWTIME_MINUTES = 0;
+const MIN_SHOWTIME_MINUTES = 780;
 
 const THEATER_URL =
   "https://www.amctheatres.com/movie-theatres/middletown/amc-crystal-run-16/showtimes";
@@ -105,12 +105,17 @@ async function getShowtimes(page, date) {
     waitUntil: "networkidle2",
     timeout: 60000,
   });
+await sleep(3000);
 
-  await sleep(3000);
+const pageTitle = await page.title();
+const pageText = await page.evaluate(() => document.body.innerText || "");
 
-  return page.evaluate((movieTerms) => {
+log(`    PAGE TITLE: ${pageTitle}`);
+log(`    PAGE TEXT HAS "BY ANY MEANS": ${pageText.toLowerCase().includes("by any means")}`);
+
+console.log(pageText.slice(0, 5000));
+return page.evaluate((movieTerms) => {
     const results = [];
-
     // Get all visible text from the page
     const bodyText = document.body.innerText || "";
 
@@ -181,10 +186,8 @@ async function getAvailableDates(page) {
   });
 
   await sleep(5000);
-
-  return page.evaluate(() => {
+return page.evaluate(() => {
     const dates = new Set();
-
     // Look for AMC date/showtime links and date attributes
     const elements = document.querySelectorAll(
       "a, button, option, [data-date], [aria-label], [class*='date'], [class*='Date']"
