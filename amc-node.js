@@ -29,7 +29,9 @@ const THEATER_URL =
 
 const TEST_MODE = process.env.TEST_MODE === "true" || process.env.TEST_MODE === "1";
 
-const MAX_DATES = 120;
+// AMC's date picker does not expose a machine-readable value for "Today".
+// Always add it explicitly, then check a short future window as schedules expand.
+const MAX_DATES = 14;
 const MIN_SEATS_FOR_EMAIL = 2;
 
 const TARGET_ROWS = ["A", "B", "C", "D", "E", "F"];
@@ -101,23 +103,16 @@ async function getShowtimes(page, date) {
 
   log(`    Checking ${date}...`);
 
+  // AMC continuously loads analytics resources, so networkidle can time out
+  // even after the showtimes are already visible.
   await page.goto(url, {
-    waitUntil: "networkidle2",
-    timeout: 60000,
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
   });
-await sleep(3000);
+  await sleep(2500);
 
-const pageTitle = await page.title();
-const pageText = await page.evaluate(() => document.body.innerText || "");
-
-log(`    PAGE TITLE: ${pageTitle}`);
-log(`    PAGE TEXT HAS "BY ANY MEANS": ${pageText.toLowerCase().includes("by any means")}`);
-
-console.log(pageText.slice(0, 5000));
-return page.evaluate((movieTerms) => {
+  return page.evaluate((movieTerms) => {
     const results = [];
-    // Get all visible text from the page
-    const bodyText = document.body.innerText || "";
 
     // Find every showtime link
     const links = Array.from(
@@ -133,7 +128,19 @@ return page.evaluate((movieTerms) => {
       const showtimeId = idMatch[1];
       const text = (link.innerText || "").trim();
 
-      // Look upward through the DOM for the movie title.
+      // AMC gives each showtime an aria-describedby value whose first element
+      // is the movie title. This survives layout changes better than walking
+      // ancestors for an arbitrary heading.
+      const descriptionIds = (link.getAttribute("aria-describedby") || "")
+        .split(/\s+/)
+        .filter(Boolean);
+      const describedText = descriptionIds
+        .map((id) => document.getElementById(id)?.textContent || "")
+        .join(" ")
+        .trim();
+
+      // Keep the heading lookup as a fallback for AMC pages without the
+      // accessibility metadata.
       let container = link;
       let movieName = "";
 
@@ -156,11 +163,7 @@ return page.evaluate((movieTerms) => {
         container = container.parentElement;
       }
 
-      const combinedText = (
-        movieName +
-        " " +
-        text
-      ).toLowerCase();
+      const combinedText = `${describedText} ${movieName} ${text}`.toLowerCase();
 
       const matches = movieTerms.some((term) =>
         combinedText.includes(term.toLowerCase())
@@ -170,7 +173,7 @@ return page.evaluate((movieTerms) => {
 
       results.push({
         id: showtimeId,
-        movie: movieName || "By Any Means",
+        movie: movieName || describedText || "Unknown movie",
         time: text.split("\n")[0].trim(),
         soldOut: text.toLowerCase().includes("sold out"),
       });
@@ -179,15 +182,30 @@ return page.evaluate((movieTerms) => {
     return results;
   }, MOVIES);
 }
+
+function theaterToday() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(
+    parts.filter(({ type }) => type !== "literal").map(({ type, value }) => [type, value])
+  );
+  return `${value.year}-${value.month}-${value.day}`;
+}
 async function getAvailableDates(page) {
   await page.goto(THEATER_URL, {
     waitUntil: "networkidle2",
     timeout: 60000,
   });
 
-  await sleep(5000);
-return page.evaluate(() => {
+  await sleep(2500);
+  const today = theaterToday();
+  return page.evaluate((today) => {
     const dates = new Set();
+    dates.add(today);
     // Look for AMC date/showtime links and date attributes
     const elements = document.querySelectorAll(
       "a, button, option, [data-date], [aria-label], [class*='date'], [class*='Date']"
@@ -222,13 +240,12 @@ return page.evaluate(() => {
       }
     }
 
-    // If AMC doesn't expose ISO dates, use the current date
-    // and the next 119 calendar days.
-    if (dates.size === 0) {
-      const today = new Date();
+    // If AMC doesn't expose future dates, include a short calendar window.
+    if (dates.size === 1) {
+      const start = new Date(`${today}T12:00:00`);
 
-      for (let i = 0; i < 120; i++) {
-        const d = new Date(today);
+      for (let i = 1; i < 14; i++) {
+        const d = new Date(start);
         d.setDate(today.getDate() + i);
 
         const yyyy = d.getFullYear();
@@ -240,7 +257,7 @@ return page.evaluate(() => {
     }
 
     return Array.from(dates).sort();
-  });
+  }, today);
 }
 async function getAvailableSeats(page, showtimeId) {
   const url = `https://www.amctheatres.com/showtimes/${showtimeId}`;
@@ -289,7 +306,13 @@ async function runFullScan(page) {
   let totalHits = 0;
 
   for (const date of dates) {
-    const showtimes = await getShowtimes(page, date);
+    let showtimes;
+    try {
+      showtimes = await getShowtimes(page, date);
+    } catch (err) {
+      log(`    ${date}: unable to load showtimes (${err.message}); continuing.`);
+      continue;
+    }
     if (showtimes.length === 0) continue;
 
     log(`  ${date}: ${showtimes.length} matching showtime(s)`);
