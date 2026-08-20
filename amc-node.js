@@ -165,15 +165,15 @@ async function getShowtimes(page, date) {
 
       const combinedText = `${describedText} ${movieName} ${text}`.toLowerCase();
 
-      const matches = movieTerms.some((term) =>
+      const matchedMovie = movieTerms.find((term) =>
         combinedText.includes(term.toLowerCase())
       );
 
-      if (!matches) continue;
+      if (!matchedMovie) continue;
 
       results.push({
         id: showtimeId,
-        movie: movieName || describedText || "Unknown movie",
+        movie: matchedMovie,
         time: text.split("\n")[0].trim(),
         soldOut: text.toLowerCase().includes("sold out"),
       });
@@ -246,7 +246,7 @@ async function getAvailableDates(page) {
 
       for (let i = 1; i < 14; i++) {
         const d = new Date(start);
-        d.setDate(today.getDate() + i);
+        d.setDate(start.getDate() + i);
 
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, "0");
